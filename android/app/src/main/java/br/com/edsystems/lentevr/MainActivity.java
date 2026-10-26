@@ -112,7 +112,7 @@ public class MainActivity extends Activity {
                 "• Na janela do Android, escolha \"Um único app\" e depois o YouTube (ou outro app). Não escolha a tela inteira.\n" +
                 "• No YouTube, coloque o vídeo em tela cheia, na horizontal.\n" +
                 "• Toque no botão laranja VR que fica na lateral da tela e coloque o celular no visor.\n" +
-                "• Para sair do VR: toque duas vezes na tela. Para encerrar: segure o botão VR ou use a notificação.", 15, COR_SUAVE));
+                "• Para sair: toque uma vez na tela e escolha Sair do VR ou Fechar app. Fora do VR, o botão ✕ abaixo do VR fecha tudo.", 15, COR_SUAVE));
         Button iniciar = botao("Iniciar", true);
         iniciar.setOnClickListener(v -> iniciar());
         col.addView(iniciar);
