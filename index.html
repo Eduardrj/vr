@@ -168,10 +168,10 @@ body.vr.notfull:not(.portrait) #full{display:flex}
   var VIEWER = { lensSep: 0.064, screenLens: 0.042, k1: 0.34, k2: 0.55, fovDeg: 50 };
   var CSS_PX_PER_INCH = 158; // Android: ~160 px CSS por polegada
 
-  var DEFAULTS = { mode: 0, ipdMm: 0, zoom: 1, k1: VIEWER.k1, k2: VIEWER.k2, yMm: 0, depth: 0.6, inch: 6.6 }; // Galaxy A14: tela de 6,6"
+  var DEFAULTS = { mode: 0, ipdMm: -9, zoom: 1, k1: VIEWER.k1, k2: VIEWER.k2, yMm: 0, depth: 0.6, inch: 6.6 }; // Galaxy A14: tela de 6,6"
   var S = Object.assign({}, DEFAULTS, { sbs: false });
-  var KEY = 'lentevr.v3';
-  try { localStorage.removeItem('lentevr.v1'); localStorage.removeItem('lentevr.v2'); } catch (e) {}
+  var KEY = 'lentevr.v4';
+  try { localStorage.removeItem('lentevr.v1'); localStorage.removeItem('lentevr.v2'); localStorage.removeItem('lentevr.v3'); } catch (e) {}
   try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) Object.assign(S, saved, { sbs: false }); } catch (e) {}
   function persist() { try { var c = Object.assign({}, S); delete c.sbs; localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) {} }
 
@@ -380,7 +380,7 @@ body.vr.notfull:not(.portrait) #full{display:flex}
 
   /* ---------- controles avançados ---------- */
   var SL_DEF = [
-    { k: 'ipdMm', t: 'Distância entre as lentes', min: -12, max: 12, st: 0.5, f: function (v) { return (64 + v).toFixed(1) + ' mm'; }, h: 'Padrão 64 mm. A calibração preenche este valor.' },
+    { k: 'ipdMm', t: 'Distância entre as lentes', min: -24, max: 8, st: 0.5, f: function (v) { return (64 + v).toFixed(1) + ' mm'; }, h: 'Padrão 55 mm (calibrado no seu A14). A calibração preenche este valor.' },
     { k: 'inch',  t: 'Tamanho da tela do celular', min: 0, max: 7, st: 0.05, f: function (v) { return v > 0 ? v.toFixed(2) + '"' : 'automático'; }, h: 'Deixe em automático ou informe as polegadas exatas do seu modelo.' },
     { k: 'zoom',  t: 'Tamanho da imagem', min: 0.6, max: 1.3, st: 0.01, f: function (v) { return Math.round(v * 100) + '%'; }, h: '' },
     { k: 'k1',    t: 'Correção da lente (k1)', min: 0, max: 0.8, st: 0.01, f: function (v) { return v.toFixed(2); }, h: 'Linhas da grade devem ficar retas.' },
@@ -423,9 +423,9 @@ body.vr.notfull:not(.portrait) #full{display:flex}
     setTimeout(resize, 150); setTimeout(resize, 600); resize();
   }
   /* ---------- calibração sem toque ----------
-     13 passos: distância entre os centros de 52 a 76 mm, de 2 em 2 mm. */
+     13 passos: distância entre os centros de 43 a 67 mm, de 2 em 2 mm. */
   var CAL_N = 13, calTimer = null, calStep = 0, calBefore = null;
-  function calOffset(n) { return -12 + (n - 1) * 2; }   // n = 1..13 → -12..+12 mm
+  function calOffset(n) { return -21 + (n - 1) * 2; }   // n = 1..13 → 43..67 mm (centro 55 mm, calibrado no A14 + Shinecon)
   function calShow() {
     var n = calStep + 1;
     S.ipdMm = calOffset(n);
