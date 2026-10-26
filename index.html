@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1218">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>Lente VR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Layout: palco 2:1 com a prévia lado a lado no topo, painel embaixo; em modo VR o palco ocupa a tela inteira. */
+:root{
+  --bg:#0f1218;
+  --surface:#181d27;
+  --line:#2a3242;
+  --fg:#e9edf5;
+  --muted:#93a0b6;
+  --accent:#ffa24d;
+  --accent-ink:#1c1206;
+  --warn:#ffcf6b;
+  --font-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.45;
+  padding-block:16px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header h1{font-family:var(--font-display);font-size:28px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.stage{position:relative;background:#000;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+#cv{display:block;width:100%;aspect-ratio:2/1;max-width:100%;background:#000}
+.stage .tag{position:absolute;left:10px;top:8px;font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);pointer-events:none}
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+button,.btn{
+  font:600 14px var(--font-body);color:var(--fg);background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;padding:11px 14px;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;justify-content:center;text-align:center
+}
+button:hover,.btn:hover{border-color:var(--muted)}
+button:focus-visible,.btn:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.primary:hover{border-color:var(--fg)}
+.big{flex:1 1 100%;font-size:16px;min-height:52px}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.check{display:flex;align-items:center;gap:10px;min-height:44px;color:var(--fg)}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.sl{display:flex;flex-direction:column;gap:4px}
+.sl .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.sl label{font-weight:500}
+.sl output{font:500 13px var(--font-mono);color:var(--accent);font-variant-numeric:tabular-nums}
+.sl small{color:var(--muted);font-size:12.5px}
+input[type=range]{width:100%;height:32px;accent-color:var(--accent);background:transparent}
+.group{display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--line);padding-top:16px}
+.group h2{margin:0;font:600 12px var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font:600 12px var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+#sliders{display:flex;flex-direction:column;gap:14px;padding-top:6px}
+.notes{color:var(--muted);font-size:13.5px;margin:0}
+.callout{border:1px solid var(--line);border-left:3px solid var(--warn);background:var(--surface);border-radius:6px;padding:12px 14px;font-size:14px}
+.callout b{color:var(--warn)}
+.info{font:500 12.5px var(--font-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+#vidbar{display:flex;gap:12px;align-items:center}
+#vidbar input{flex:1;min-width:0}
+
+/* Modo VR */
+body.vr{padding:0;overflow:hidden}
+body.vr .wrap{max-width:none;margin:0;gap:0}
+body.vr header,body.vr .panel,body.vr #nogl{display:none}
+body.vr .stage{position:fixed;inset:0;z-index:50;border:0;border-radius:0}
+body.vr #cv{width:100%;height:100%;aspect-ratio:auto}
+body.vr .stage .tag{display:none}
+.overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.9);color:var(--fg);align-items:center;justify-content:center;text-align:center;padding:24px;font:600 19px/1.35 var(--font-display)}
+body.vr.portrait #turn{display:flex}
+body.vr.notfull:not(.portrait) #full{display:flex}
+#nogl{padding:16px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+@media (prefers-reduced-motion:no-preference){button,.btn{transition:border-color .15s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Lente VR</h1>
+    <p>Transforma foto ou vídeo em imagem lado a lado para o visor Shinecon.</p>
+  </header>
+
+  <div class="callout" id="where"><b>Tela cheia:</b> no Chrome, toque no menu ⋮ e em <b>Adicionar à tela inicial</b> (ou <b>Instalar app</b>). Depois abra pelo ícone Lente VR: ele já abre em tela cheia e na horizontal.</div>
+
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <span class="tag" id="tag">Imagem de teste</span>
+    <div class="overlay" id="turn">Gire o celular para a horizontal</div>
+    <div class="overlay" id="full">A página não está ocupando a tela inteira, então as imagens não vão se juntar. Abra o link direto no Chrome. Toque para voltar.</div>
+  </div>
+  <div id="nogl" hidden>Este navegador não liberou o WebGL. Tente abrir no Chrome do Android.</div>
+
+  <div class="panel">
+    <div class="row">
+      <label class="btn primary big" for="file">Escolher foto ou vídeo do celular</label>
+      <input type="file" id="file" accept="image/*,video/*">
+      <button id="test" type="button">Imagem de teste</button>
+    </div>
+
+    <div id="vidbar" hidden>
+      <button id="play" type="button" style="min-width:92px">Pausar</button>
+      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Posição do vídeo">
+    </div>
+
+    <div class="row">
+      <button id="enter" type="button" class="primary big">Entrar no VR</button>
+    </div>
+
+    <div class="group" id="calgroup">
+      <h2>Calibrar (vê dois círculos?)</h2>
+      <p class="notes">Toque em Calibrar e coloque o celular no visor. Vão aparecer números de 1 a 13, um a cada 3 segundos, cada um com uma distância diferente. Guarde o número que você viu como <b>uma imagem só</b>. Depois tire o celular, toque na tela e escolha esse número.</p>
+      <button id="calib" type="button" class="btn">Calibrar</button>
+      <div id="pick" hidden>
+        <p class="notes" style="margin-bottom:8px">Qual número ficou como uma imagem só?</p>
+        <div class="row" id="picknums"></div>
+      </div>
+      <p class="info" id="calres"></p>
+    </div>
+
+    <div class="group">
+      <h2>Tipo de imagem</h2>
+      <div class="seg" role="group" aria-label="Tipo de imagem">
+        <button type="button" id="m0" aria-pressed="true">Cinema</button>
+        <button type="button" id="m1" aria-pressed="false">3D simulado</button>
+      </div>
+      <label class="check"><input type="checkbox" id="sbs"> O arquivo já é 3D lado a lado</label>
+      <p class="notes">Vídeos entram automaticamente como 3D lado a lado e fotos como cinema. Mude aqui se precisar.</p>
+    </div>
+
+    <details class="group" id="adv">
+      <summary>Ajustes avançados (opcional)</summary>
+      <div id="sliders"></div>
+      <button id="reset" type="button">Restaurar padrão</button>
+      <p class="info" id="diag"></p>
+    </details>
+
+    <p class="notes">No visor, coloque o celular na horizontal e centralizado no suporte. Para sair do VR, toque na tela.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  var canvas = $('#cv');
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+  if (!gl) { $('#nogl').hidden = false; return; }
+
+  /* Perfil do visor no modelo do Google Cardboard (cardboard-vr-display).
+     Shinecon: lentes de 40 mm, IPD 60-70 mm, foco 37,5-46,5 mm.
+     k1/k2: perfil Cardboard V2 (lentes de campo largo), o mais usado em visores genéricos. */
+  var VIEWER = { lensSep: 0.064, screenLens: 0.042, k1: 0.34, k2: 0.55, fovDeg: 50 };
+  var CSS_PX_PER_INCH = 158; // Android: ~160 px CSS por polegada
+
+  var DEFAULTS = { mode: 0, ipdMm: 0, zoom: 1, k1: VIEWER.k1, k2: VIEWER.k2, yMm: 0, depth: 0.6, inch: 6.6 }; // Galaxy A14: tela de 6,6"
+  var S = Object.assign({}, DEFAULTS, { sbs: false });
+  var KEY = 'lentevr.v3';
+  try { localStorage.removeItem('lentevr.v1'); localStorage.removeItem('lentevr.v2'); } catch (e) {}
+  try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) Object.assign(S, saved, { sbs: false }); } catch (e) {}
+  function persist() { try { var c = Object.assign({}, S); delete c.sbs; localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) {} }
+
+  /* ---------- shaders ---------- */
+  var VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+  var FS = [
+    'precision highp float;',
+    'uniform sampler2D uTex;',
+    'uniform vec2 uRes;uniform float uMPerPx,uLensSep,uSL,uK1,uK2,uMaxT,uHW,uIA,uYm,uDepth,uSbs,uMode;',
+    'float distortInv(float rd){',
+    '  float r=rd;',
+    '  for(int i=0;i<8;i++){float r2=r*r;float f=r*(1.+uK1*r2+uK2*r2*r2)-rd;float fp=1.+3.*uK1*r2+5.*uK2*r2*r2;r-=f/fp;}',
+    '  return r;',
+    '}',
+    'void main(){',
+    '  vec2 px=gl_FragCoord.xy;',
+    '  float eye=px.x<uRes.x*.5?-1.:1.;',
+    '  vec2 m=(px-uRes*.5)*uMPerPx;',
+    '  vec2 lc=vec2(eye*uLensSep*.5,uYm);',
+    '  vec2 d=(m-lc)/uSL;',
+    '  float rd=length(d);',
+    '  float rd2=rd*rd;',
+    '  float g=1.+uK1*rd2+uK2*rd2*rd2;',
+    '  float r=rd*g;',
+    '  vec2 t=d*g;',
+    '  if(r>uMaxT){gl_FragColor=vec4(0.,0.,0.,1.);return;}',
+    '  float hh=uHW/uIA;',
+    '  vec2 uv=vec2(t.x/uHW,t.y/hh)*.5+.5;',
+    '  if(uv.x<0.||uv.x>1.||uv.y<0.||uv.y>1.){gl_FragColor=vec4(0.,0.,0.,1.);return;}',
+    '  if(uMode>.5&&uSbs<.5){',
+    '    float l=dot(texture2D(uTex,uv).rgb,vec3(.299,.587,.114));',
+    '    uv.x=clamp(uv.x+eye*uDepth*(l-.5)*.05,0.,1.);',
+    '  }',
+    '  if(uSbs>.5){uv.x=uv.x*.5+(eye>0.?.5:0.);}',
+    '  gl_FragColor=vec4(texture2D(uTex,uv).rgb,1.);',
+    '}'
+  ].join('\n');
+
+  function sh(type, src) {
+    var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  var prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog, 'a');
+  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  var U = {};
+  ['uTex','uRes','uMPerPx','uLensSep','uSL','uK1','uK2','uMaxT','uHW','uIA','uYm','uDepth','uSbs','uMode'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+
+  var tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.uniform1i(U.uTex, 0);
+  var MAXT = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) || 2048, 4096);
+
+  /* ---------- fonte de imagem ---------- */
+  var video = document.createElement('video');
+  video.playsInline = true; video.loop = true; video.setAttribute('playsinline', '');
+  var src = { type: 'image', w: 1600, h: 900 };
+  var dirty = true;
+
+  function upload(el) { gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); }
+
+  function useImageSource(el, w, h, label) {
+    if (w > MAXT || h > MAXT) {
+      var k = MAXT / Math.max(w, h), c = document.createElement('canvas');
+      c.width = Math.round(w * k); c.height = Math.round(h * k);
+      c.getContext('2d').drawImage(el, 0, 0, c.width, c.height);
+      el = c; w = c.width; h = c.height;
+    }
+    video.pause(); $('#vidbar').hidden = true;
+    S.sbs = false; syncUI();
+    src = { type: 'image', w: w, h: h };
+    upload(el); dirty = true; $('#tag').textContent = label;
+  }
+
+  function makeTestImage(num) {
+    var c = document.createElement('canvas'); c.width = 1600; c.height = 900;
+    var g = c.getContext('2d');
+    g.fillStyle = '#10141c'; g.fillRect(0, 0, 1600, 900);
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2;
+    for (var x = 0; x <= 1600; x += 100) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 900); g.stroke(); }
+    for (var y = 50; y <= 900; y += 100) { g.beginPath(); g.moveTo(0, y); g.lineTo(1600, y); g.stroke(); }
+    g.strokeStyle = '#ffa24d'; g.lineWidth = 6; g.strokeRect(3, 3, 1594, 894);
+    g.beginPath(); g.moveTo(800, 0); g.lineTo(800, 900); g.moveTo(0, 450); g.lineTo(1600, 450); g.stroke();
+    g.fillStyle = '#ffd9b0'; g.beginPath(); g.arc(800, 450, num ? 150 : 60, 0, 7); g.fill();
+    g.textAlign = 'center';
+    if (num) {
+      g.fillStyle = '#1c1206'; g.font = '800 210px system-ui,sans-serif'; g.textBaseline = 'middle';
+      g.fillText(String(num), 800, 460); g.textBaseline = 'alphabetic';
+    }
+    g.fillStyle = '#fff'; g.font = '700 70px system-ui,sans-serif';
+    g.fillText(num ? 'CALIBRAÇÃO' : 'TESTE DO VISOR', 800, 170);
+    g.font = '500 34px system-ui,sans-serif';
+    g.fillText(num ? 'guarde o número que aparecer como UMA imagem só' : 'você deve ver UM círculo e a grade reta', 800, 740);
+    return c;
+  }
+  function loadTest() { var c = makeTestImage(); useImageSource(c, c.width, c.height, 'Imagem de teste'); }
+
+  $('#file').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0]; if (!f) return;
+    var url = URL.createObjectURL(f);
+    if (f.type.indexOf('video') === 0) {
+      video.src = url; video.muted = false;
+      video.onloadeddata = function () {
+        src = { type: 'video', w: video.videoWidth, h: video.videoHeight };
+        S.sbs = true; syncUI();
+        $('#vidbar').hidden = false; $('#tag').textContent = f.name;
+        var p = video.play(); if (p && p.catch) p.catch(function () { video.muted = true; video.play().catch(function () {}); });
+        $('#play').textContent = 'Pausar'; dirty = true;
+      };
+    } else {
+      var im = new Image();
+      im.onload = function () { useImageSource(im, im.naturalWidth, im.naturalHeight, f.name); };
+      im.src = url;
+    }
+  });
+  $('#test').addEventListener('click', loadTest);
+  $('#play').addEventListener('click', function () {
+    if (video.paused) { video.play(); this.textContent = 'Pausar'; } else { video.pause(); this.textContent = 'Reproduzir'; }
+  });
+  video.addEventListener('timeupdate', function () {
+    if (video.duration) $('#seek').value = Math.round(video.currentTime / video.duration * 1000);
+  });
+  $('#seek').addEventListener('input', function () { if (video.duration) video.currentTime = this.value / 1000 * video.duration; });
+
+  /* ---------- geometria física ---------- */
+  function distort(r, k1, k2) { var r2 = r * r; return r * (1 + k1 * r2 + k2 * r2 * r2); }
+  function distortInv(rd, k1, k2) {
+    var r = rd;
+    for (var i = 0; i < 12; i++) { var r2 = r * r; var f = distort(r, k1, k2) - rd; var fp = 1 + 3 * k1 * r2 + 5 * k2 * r2 * r2; r -= f / fp; }
+    return r;
+  }
+  function metersPerCssPx() {
+    var sw = Math.max(screen.width, screen.height), shh = Math.min(screen.width, screen.height);
+    if (S.inch > 0 && sw > 0) {
+      var diagPx = Math.sqrt(sw * sw + shh * shh);
+      return S.inch * 0.0254 / diagPx;
+    }
+    return 0.0254 / CSS_PX_PER_INCH;
+  }
+
+  var dpr = 1, inVR = false;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(2, Math.round(canvas.clientWidth * dpr)), h = Math.max(2, Math.round(canvas.clientHeight * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    document.body.classList.toggle('portrait', window.innerHeight > window.innerWidth);
+    var longSide = Math.max(screen.width, screen.height);
+    document.body.classList.toggle('notfull', inVR && canvas.clientWidth < longSide * 0.92);
+    dirty = true;
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
+  window.addEventListener('resize', resize);
+
+  function frame() {
+    requestAnimationFrame(frame);
+    var playing = src.type === 'video' && video.readyState >= 2;
+    if (!dirty && !(playing && !video.paused)) return;
+    if (playing) upload(video);
+    dirty = false;
+
+    var W = canvas.width, H = canvas.height;
+    var mpx = metersPerCssPx() / dpr;            // metros por pixel do canvas
+    var lensSep = VIEWER.lensSep + S.ipdMm / 1000;
+    var SL = VIEWER.screenLens, k1 = S.k1, k2 = S.k2;
+
+    // Limites visíveis de cada olho (em tangente do ângulo, já corrigidos pela lente)
+    var halfWm = W * mpx / 2, halfHm = H * mpx / 2;
+    // a lente amplia: ângulo percebido = distort(ângulo na tela)
+    var inner = distort((lensSep / 2) / SL, k1, k2);
+    var outer = distort((halfWm - lensSep / 2) / SL, k1, k2);
+    var vert = distort((halfHm - Math.abs(S.yMm / 1000)) / SL, k1, k2);
+    var maxT = Math.tan(VIEWER.fovDeg * Math.PI / 180);
+    var ia = (S.sbs ? src.w / 2 : src.w) / src.h;
+    // meia-largura da "tela virtual": cabe na lente nos dois sentidos
+    var hw = Math.min(inner, outer, maxT, vert * ia) * 0.96 * S.zoom;
+
+    gl.viewport(0, 0, W, H);
+    gl.uniform2f(U.uRes, W, H);
+    gl.uniform1f(U.uMPerPx, mpx);
+    gl.uniform1f(U.uLensSep, lensSep);
+    gl.uniform1f(U.uSL, SL);
+    gl.uniform1f(U.uK1, k1); gl.uniform1f(U.uK2, k2);
+    gl.uniform1f(U.uMaxT, Math.min(maxT, Math.max(inner, outer, vert)));
+    gl.uniform1f(U.uHW, hw);
+    gl.uniform1f(U.uIA, ia);
+    gl.uniform1f(U.uYm, S.yMm / 1000);
+    gl.uniform1f(U.uDepth, S.depth);
+    gl.uniform1f(U.uSbs, S.sbs ? 1 : 0);
+    gl.uniform1f(U.uMode, S.mode);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    $('#diag').textContent = 'Tela estimada: ' + Math.round(W * mpx * 1000) + ' × ' + Math.round(H * mpx * 1000) +
+      ' mm · lentes a ' + Math.round(lensSep * 1000) + ' mm · campo da imagem ' + Math.round(2 * Math.atan(hw) * 180 / Math.PI) + '°';
+  }
+
+  /* ---------- controles avançados ---------- */
+  var SL_DEF = [
+    { k: 'ipdMm', t: 'Distância entre as lentes', min: -12, max: 12, st: 0.5, f: function (v) { return (64 + v).toFixed(1) + ' mm'; }, h: 'Padrão 64 mm. A calibração preenche este valor.' },
+    { k: 'inch',  t: 'Tamanho da tela do celular', min: 0, max: 7, st: 0.05, f: function (v) { return v > 0 ? v.toFixed(2) + '"' : 'automático'; }, h: 'Deixe em automático ou informe as polegadas exatas do seu modelo.' },
+    { k: 'zoom',  t: 'Tamanho da imagem', min: 0.6, max: 1.3, st: 0.01, f: function (v) { return Math.round(v * 100) + '%'; }, h: '' },
+    { k: 'k1',    t: 'Correção da lente (k1)', min: 0, max: 0.8, st: 0.01, f: function (v) { return v.toFixed(2); }, h: 'Linhas da grade devem ficar retas.' },
+    { k: 'k2',    t: 'Correção das bordas (k2)', min: 0, max: 1, st: 0.01, f: function (v) { return v.toFixed(2); }, h: '' },
+    { k: 'yMm',   t: 'Altura das lentes', min: -15, max: 15, st: 0.5, f: function (v) { return v.toFixed(1) + ' mm'; }, h: '' },
+    { k: 'depth', t: 'Força do 3D simulado', min: 0, max: 1, st: 0.01, f: function (v) { return Math.round(v * 100) + '%'; }, h: '' }
+  ];
+  var box = $('#sliders'), outs = {}, ins = {};
+  SL_DEF.forEach(function (d) {
+    var w = document.createElement('div'); w.className = 'sl';
+    w.innerHTML = '<div class="top"><label for="s_' + d.k + '">' + d.t + '</label><output id="o_' + d.k + '"></output></div>' +
+      '<input type="range" id="s_' + d.k + '" min="' + d.min + '" max="' + d.max + '" step="' + d.st + '">' + (d.h ? '<small>' + d.h + '</small>' : '');
+    box.appendChild(w);
+    var inp = w.querySelector('input'), out = w.querySelector('output');
+    ins[d.k] = inp; outs[d.k] = out;
+    inp.addEventListener('input', function () { S[d.k] = parseFloat(inp.value); out.textContent = d.f(S[d.k]); dirty = true; persist(); });
+  });
+  function syncUI() {
+    SL_DEF.forEach(function (d) { ins[d.k].value = S[d.k]; outs[d.k].textContent = d.f(S[d.k]); });
+    $('#m0').setAttribute('aria-pressed', S.mode === 0); $('#m1').setAttribute('aria-pressed', S.mode === 1);
+    $('#sbs').checked = !!S.sbs;
+    dirty = true;
+  }
+  $('#m0').addEventListener('click', function () { S.mode = 0; syncUI(); persist(); });
+  $('#m1').addEventListener('click', function () { S.mode = 1; syncUI(); persist(); });
+  $('#sbs').addEventListener('change', function () { S.sbs = this.checked; syncUI(); });
+  $('#reset').addEventListener('click', function () { var sbs = S.sbs; S = Object.assign({}, DEFAULTS, { sbs: sbs }); syncUI(); persist(); });
+
+  /* ---------- modo VR ---------- */
+  var fsOK = false, lock = null;
+  function enterVR() {
+    inVR = true; document.body.classList.add('vr');
+    var el = document.documentElement;
+    try {
+      var p = el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' });
+      if (p && p.then) p.then(function () { fsOK = true; setTimeout(resize, 150); }).catch(function () {});
+    } catch (e) {}
+    try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {}); } catch (e) {}
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () {}); } catch (e) {}
+    setTimeout(resize, 150); setTimeout(resize, 600); resize();
+  }
+  /* ---------- calibração sem toque ----------
+     13 passos: distância entre os centros de 52 a 76 mm, de 2 em 2 mm. */
+  var CAL_N = 13, calTimer = null, calStep = 0, calBefore = null;
+  function calOffset(n) { return -12 + (n - 1) * 2; }   // n = 1..13 → -12..+12 mm
+  function calShow() {
+    var n = calStep + 1;
+    S.ipdMm = calOffset(n);
+    var c = makeTestImage(n); useImageSource(c, c.width, c.height, 'Calibração ' + n);
+    calStep = (calStep + 1) % CAL_N;
+  }
+  $('#calib').addEventListener('click', function () {
+    calBefore = S.ipdMm; calStep = 0;
+    $('#pick').hidden = true; $('#calres').textContent = '';
+    enterVR();
+    calShow(); calTimer = setInterval(calShow, 3000);
+  });
+  var pn = $('#picknums');
+  for (var i = 1; i <= CAL_N; i++) (function (n) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.style.minWidth = '48px';
+    b.addEventListener('click', function () {
+      S.ipdMm = calOffset(n); persist(); syncUI(); loadTest();
+      $('#pick').hidden = true;
+      $('#calres').textContent = 'Salvo: número ' + n + ' (lentes a ' + (64 + S.ipdMm) + ' mm). Entre no VR para conferir.';
+    });
+    pn.appendChild(b);
+  })(i);
+  function stopCal() {
+    if (!calTimer) return;
+    clearInterval(calTimer); calTimer = null;
+    if (calBefore !== null) S.ipdMm = calBefore;
+    syncUI(); loadTest();
+    $('#pick').hidden = false;
+    setTimeout(function () { $('#calgroup').scrollIntoView({ block: 'center' }); }, 300);
+  }
+
+  function exitVR() {
+    stopCal();
+    inVR = false; fsOK = false; document.body.classList.remove('vr', 'notfull');
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+    try { if (lock) { lock.release(); lock = null; } } catch (e) {}
+    setTimeout(resize, 150); resize();
+  }
+  $('#enter').addEventListener('click', enterVR);
+  $('#stage').addEventListener('click', function () { if (inVR) exitVR(); });
+  document.addEventListener('fullscreenchange', function () { if (inVR && fsOK && !document.fullscreenElement) exitVR(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && inVR) exitVR(); });
+
+  syncUI(); loadTest(); resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
